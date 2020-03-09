@@ -25,7 +25,7 @@ fn main() -> Result<(), String> {
     let oauth = OAuth::new(provider, client_id, client_secret, redirect_url);
 
     // redirect the user to `auth_url` to start the authentication flow
-    let auth_url = oauth.authorization_url(vec!["email"])?;
+    let auth_url = oauth.authorization_url()?;
     println!("open in a browser: {}", auth_url);
 
     // get the full URL to which the user is redirected

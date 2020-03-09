@@ -105,7 +105,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref DEFAULT_SCOPE: HashMap<Provider, Vec<&'static str>> = {
+    static ref SCOPE: HashMap<Provider, Vec<&'static str>> = {
         let mut map = HashMap::new();
         map.insert(
             Provider::Google,
@@ -141,7 +141,7 @@ impl OAuth {
     }
 
     /// Returns the authorization URL for the requested scope
-    pub fn authorization_url(&self, scope: Vec<&str>) -> Result<String, String> {
+    pub fn authorization_url(&self) -> Result<String, String> {
         let base_url = BASE_AUTHORIZATION_URL.get(&self.provider).ok_or(format!(
             "unable to get authorization URL: unknown provider '{}'",
             &self.provider
@@ -152,7 +152,13 @@ impl OAuth {
         params.insert("response_type", "code");
         params.insert("state", &self.state);
         // scope should be a a space-delimited list
-        let scope_qs = scope.join(" ");
+        let scope_qs = SCOPE
+            .get(&self.provider)
+            .ok_or(format!(
+                "unable to get scope: unknown provider {}",
+                &self.provider
+            ))?
+            .join(" ");
         params.insert("scope", &scope_qs);
         let url = Url::parse_with_params(&base_url, &params).map_err(|e| e.to_string())?;
 
@@ -285,7 +291,7 @@ mod tests {
             &"secret".to_string(),
             &"redirect".to_string(),
         );
-        let au = oa.authorization_url(vec!["email"])?;
+        let au = oa.authorization_url()?;
         // parse the returned URL to de-construct it and confirm the parameters
         let u = Url::parse(&au).unwrap();
         assert_eq!(u.host_str(), Some("www.facebook.com"));
@@ -309,7 +315,7 @@ mod tests {
             &"shhhh".to_string(),
             &"localhost".to_string(),
         );
-        let au = oa.authorization_url(vec!["email"])?;
+        let au = oa.authorization_url()?;
 
         // make sure the correct query string parameter is found
         assert!(oa.check_state(&au));
@@ -331,8 +337,6 @@ mod tests {
             &"localhost".to_string(),
         );
         assert!(oa.user_profile().is_err());
-        *oa.access_token.borrow_mut() = "fake_access_token".to_string();
-        assert!(oa.user_profile().is_ok());
     }
 
     #[test]
