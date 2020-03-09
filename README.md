@@ -1,2 +1,2 @@
-# simple-oauth
-Simplified OAuth flow for some well-known providers
+# simple-oauth-login
+ Simple, high-level, no-knobs, OAuth login flow for some well-known providers
