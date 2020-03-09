@@ -1,11 +1,11 @@
 [package]
-name = "simple-oauth"
+name = "simple-oauth-login"
 version = "0.1.0"
 authors = ["Marco Almeida <marcoafalmeida@gmail.com>"]
 edition = "2018"
 
 [[example]]
-name = "simple-oauth"
+name = "simple-oauth-login"
 path = "examples/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
