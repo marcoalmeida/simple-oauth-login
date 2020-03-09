@@ -1,0 +1,19 @@
+[package]
+name = "simple-oauth"
+version = "0.1.0"
+authors = ["Marco Almeida <marcoafalmeida@gmail.com>"]
+edition = "2018"
+
+[[example]]
+name = "simple-oauth"
+path = "examples/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lazy_static = "1.4.0"
+rand = "0.7.3"
+url = "2.1.1"
+reqwest = { version="0.10.4", features=["blocking", "json"] }
+serde_json = "1.0.48"
+serde = { version = "1.0", features = ["derive"] }
