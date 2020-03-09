@@ -32,9 +32,12 @@ pub struct OAuth {
 
 #[derive(Deserialize, Debug)]
 pub struct UserProfile {
+    #[serde(alias = "sub")] // Google
     id: String,
     name: String,
+    #[serde(alias = "given_name")] // Google
     first_name: String,
+    #[serde(alias = "family_name")] // Google
     last_name: String,
     email: String,
 }
@@ -55,7 +58,7 @@ lazy_static! {
         let mut map = HashMap::new();
         map.insert(
             Provider::Google,
-            "https://accounts.google.com/o/oauth2/auth",
+            "https://accounts.google.com/o/oauth2/v2/auth",
         );
         map.insert(
             Provider::Facebook,
@@ -90,7 +93,7 @@ lazy_static! {
         let mut map = HashMap::new();
         map.insert(
             Provider::Google,
-            "https://www.googleapis.com/plus/v1/people/me",
+            "https://www.googleapis.com/oauth2/v3/userinfo",
         );
         map.insert(
             Provider::Facebook,
@@ -110,8 +113,8 @@ lazy_static! {
         map.insert(
             Provider::Google,
             vec![
-                "https://www.googleapis.com/auth/userinfo.profile",
-                "https://www.googleapis.com/auth/userinfo.email",
+                "profile",
+                "email",
             ],
         );
         map.insert(Provider::Facebook, vec!["email"]);
@@ -174,21 +177,8 @@ impl OAuth {
 
         match self.provider {
             Provider::Facebook => self.user_profile_facebook(),
-            Provider::Google => Err("not yet".to_string()),
+            Provider::Google => self.user_profile_google(),
         }
-
-        // Google
-        // headers = {'Authorization': 'Bearer ' + data['access_token']}
-        // url = 'https://www.googleapis.com/plus/v1/people/me'
-        // async with client.get(url, headers=headers) as resp:
-        //     profile = await resp.json()
-        // log.debug('g+ profile: %s', pformat(profile))
-        // email = None
-        // for e in profile.get('emails', []):
-        //     if e['type'] == 'account':
-        //         email = e['value']
-        //         break
-        // name = profile['displayName'] or profile.get('name', {}).get('givenName')
     }
 
     pub fn fetch_token(&self, redirect_response: &String) -> Result<(), String> {
@@ -211,6 +201,7 @@ impl OAuth {
         params.insert("client_id", &self.client_id);
         params.insert("redirect_uri", &self.redirect_uri);
         params.insert("client_secret", &self.client_secret);
+        params.insert("grant_type", "authorization_code");
         params.insert("code", &code);
         // POST the request for the access token
         let client = reqwest::blocking::Client::new();
@@ -256,6 +247,27 @@ impl OAuth {
         let url = Url::parse_with_params(&base_url, &params).map_err(|e| e.to_string())?;
         // fetch the user profile
         let profile: UserProfile = reqwest::blocking::get(url.clone())
+            .map_err(|e| e.to_string())?
+            .json()
+            .map_err(|e| e.to_string())?;
+
+        Ok(profile)
+    }
+
+    fn user_profile_google(&self) -> Result<UserProfile, String> {
+        let base_url = PROFILE_URL.get(&self.provider).ok_or(format!(
+            "unable to fetch profile: unknown provider '{}'",
+            &self.provider
+        ))?;
+        let access_token = self.access_token.borrow();
+        let client = reqwest::blocking::Client::new();
+        // build a request and add the authentication header with the `accedd_token`
+        let request = client
+            .request(reqwest::Method::GET, &base_url.to_string())
+            .bearer_auth(&access_token);
+        // fetch the profile
+        let profile: UserProfile = request
+            .send()
             .map_err(|e| e.to_string())?
             .json()
             .map_err(|e| e.to_string())?;
