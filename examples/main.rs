@@ -1,6 +1,6 @@
 use std::{env, io};
 
-use ::simple_oauth::{OAuth, Provider};
+use simple_oauth::{OAuth, Provider};
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
