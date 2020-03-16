@@ -1,16 +1,12 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::{fmt, iter};
+use std::fmt;
 
 use lazy_static::lazy_static;
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
 use reqwest;
 use serde::Deserialize;
 use serde_json::Value;
 use url::Url;
-
-const STATE_LENGTH: usize = 16;
 
 #[derive(Hash, Eq, PartialEq)]
 pub enum Provider {
@@ -129,16 +125,14 @@ impl OAuth {
         client_id: &String,
         client_secret: &String,
         redirect_uri: &String,
+        state: &String,
     ) -> OAuth {
         OAuth {
             provider: provider,
             client_id: client_id.clone(),
             client_secret: client_secret.clone(),
             redirect_uri: redirect_uri.clone(),
-            state: iter::repeat(())
-                .map(|()| thread_rng().sample(Alphanumeric))
-                .take(STATE_LENGTH)
-                .collect::<String>(),
+            state: state.clone(),
             access_token: RefCell::new(String::new()),
         }
     }
@@ -294,14 +288,24 @@ fn get_query_string_param(url: &String, param: &String) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
+    use std::iter;
+
+    const STATE_LENGTH: usize = 16;
 
     #[test]
     fn test_authorization_url() -> Result<(), String> {
+        let state: String = iter::repeat(())
+            .map(|()| thread_rng().sample(Alphanumeric))
+            .take(STATE_LENGTH)
+            .collect::<String>();
         let oa = OAuth::new(
             Provider::Facebook,
             &"id".to_string(),
             &"secret".to_string(),
             &"redirect".to_string(),
+            &state,
         );
         let au = oa.authorization_url()?;
         // parse the returned URL to de-construct it and confirm the parameters
@@ -321,11 +325,16 @@ mod tests {
 
     #[test]
     fn test_check_state() -> Result<(), String> {
+        let state: String = iter::repeat(())
+            .map(|()| thread_rng().sample(Alphanumeric))
+            .take(STATE_LENGTH)
+            .collect::<String>();
         let oa = OAuth::new(
             Provider::Facebook,
             &"3143960285829409".to_string(),
             &"shhhh".to_string(),
             &"localhost".to_string(),
+            &state,
         );
         let au = oa.authorization_url()?;
 
@@ -342,11 +351,16 @@ mod tests {
 
     #[test]
     fn test_user_profile() {
+        let state: String = iter::repeat(())
+            .map(|()| thread_rng().sample(Alphanumeric))
+            .take(STATE_LENGTH)
+            .collect::<String>();
         let oa = OAuth::new(
             Provider::Facebook,
             &"3143960285829409".to_string(),
             &"shhhh".to_string(),
             &"localhost".to_string(),
+            &state,
         );
         assert!(oa.user_profile().is_err());
     }

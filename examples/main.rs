@@ -1,4 +1,8 @@
+use std::iter;
 use std::{env, io};
+
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 
 use simple_oauth_login::{OAuth, Provider};
 
@@ -20,9 +24,13 @@ fn main() -> Result<(), String> {
     let client_id: &String = &args[2];
     let redirect_url: &String = &args[3];
     let client_secret: &String = &args[4];
+    let state: String = iter::repeat(())
+        .map(|()| thread_rng().sample(Alphanumeric))
+        .take(16)
+        .collect::<String>();
 
     // needs to be mut as
-    let oauth = OAuth::new(provider, client_id, client_secret, redirect_url);
+    let oauth = OAuth::new(provider, client_id, client_secret, redirect_url, &state);
 
     // redirect the user to `auth_url` to start the authentication flow
     let auth_url = oauth.authorization_url()?;
